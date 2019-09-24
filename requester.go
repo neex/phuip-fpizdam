@@ -27,13 +27,15 @@ func NewRequester(resource, cookie string) (*Requester, error) {
 	}
 
 	nextProto := make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
+	disableRedirects := func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
 	return &Requester{
 		cl: &http.Client{
 			Transport: &http.Transport{
 				DisableCompression: true,      // No "Accept-Encoding"
 				TLSNextProto:       nextProto, // No http2
 			},
-			Timeout: 30 * time.Second,
+			Timeout:       30 * time.Second,
+			CheckRedirect: disableRedirects, // No redirects
 		},
 		u:      u,
 		cookie: cookie,

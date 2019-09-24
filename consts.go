@@ -10,4 +10,5 @@ const (
 	MaxQSLDetectDelta    = 10
 	MaxQSLCandidates     = 10
 	MaxPisosLength       = 256
+	BreakingPayload      = "/PHP\nis_the_shittiest_lang.php"
 )

@@ -26,3 +26,12 @@ func Attack(requester *Requester, params *AttackParams) error {
 	}
 	return nil
 }
+
+func KillWorkers(requester *Requester, params *AttackParams, killCount int) error {
+	for i := 0; i < killCount; i++ {
+		if _, _, err := requester.Request(BreakingPayload, params); err != nil {
+			return err
+		}
+	}
+	return nil
+}
