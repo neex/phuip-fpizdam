@@ -19,7 +19,9 @@ func SetSetting(requester *Requester, params *AttackParams, setting string, trie
 	if err != nil {
 		return err
 	}
-	log.Printf("Trying to set %#v...", setting)
+	if tries > 1 {
+		log.Printf("Trying to set %#v...", setting)
+	}
 	for i := 0; i < tries; i++ {
 		_, _, err := requester.Request(payload, params)
 		if err != nil {
