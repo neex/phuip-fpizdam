@@ -48,6 +48,8 @@ func (r *Requester) Request(pathInfo string, params *AttackParams) (*http.Respon
 	u.RawQuery = strings.Repeat("Q", params.QueryStringLength)
 	u.Path += pathInfo
 	req, err := http.NewRequest("GET", u.String(), nil)
+	// only encode critical chars
+	req.URL.Opaque = "//" + u.Host + strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(u.Path, "\n", "%0a"), "?", "%3f"), " ", "%20")
 	if err != nil {
 		return nil, nil, err
 	}
