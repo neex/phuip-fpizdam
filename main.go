@@ -14,6 +14,7 @@ func main() {
 		skipDetect   bool
 		skipAttack   bool
 		resetSetting bool
+		resetRetries int
 		onlyQSL      bool
 		params       = &AttackParams{}
 	)
@@ -40,7 +41,10 @@ func main() {
 				if setting == "" {
 					setting = m.PHPOptionDisable
 				}
-				if err := SetSetting(requester, params, m.PHPOptionDisable, SettingEnableRetries); err != nil {
+				if resetRetries == -1 {
+					resetRetries = 1 << 32
+				}
+				if err := SetSetting(requester, params, setting, resetRetries); err != nil {
 					log.Fatalf("ResetSetting() returned error: %v", err)
 				}
 				log.Printf("I did my best trying to set %#v", setting)
@@ -92,6 +96,7 @@ func main() {
 	cmd.Flags().BoolVar(&skipDetect, "skip-attack", false, "skip attack phase")
 	cmd.Flags().BoolVar(&onlyQSL, "only-qsl", false, "stop after QSL detection, use this if you just want to check if the server is vulnerable")
 	cmd.Flags().BoolVar(&resetSetting, "reset-setting", false, "try to reset setting (requires attack params)")
+	cmd.Flags().IntVar(&resetRetries, "reset-retries", resetRetries, "how many retries to do for --reset-setting, -1 means 2**32")
 	cmd.Flags().StringVar(&setting, "setting", "", "specify custom php.ini setting for --reset-setting")
 
 	if err := cmd.Execute(); err != nil {
