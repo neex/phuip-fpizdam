@@ -41,12 +41,16 @@ func main() {
 					log.Fatal("--reset-setting requires complete params")
 				}
 				if setting == "" {
-					setting = m.PHPOptionDisable
+					log.Fatal("--reset-setting requires --setting")
 				}
 				if resetRetries == -1 {
 					resetRetries = 1 << 32
 				}
-				if err := SetSetting(requester, params, setting, resetRetries); err != nil {
+				o := &Overrider{
+					Requester: requester,
+					Params:    params,
+				}
+				if err := o.PHPValueWithRetries(setting, resetRetries); err != nil {
 					log.Fatalf("ResetSetting() returned error: %v", err)
 				}
 				log.Printf("I did my best trying to set %#v", setting)
@@ -99,8 +103,11 @@ func main() {
 				log.Print("Attack phase is disabled, so that's it")
 				return
 			}
-
-			if err := Attack(requester, params); err != nil {
+			o := &Overrider{
+				Requester: requester,
+				Params:    params,
+			}
+			if err := Attack(o); err != nil {
 				log.Fatalf("Attack returned error: %v", err)
 			}
 		},
