@@ -5,7 +5,7 @@ const (
 	PosOffset            = 34
 	SettingEnableRetries = 50
 	MinQSL               = 1500
-	MaxQSL               = 2040
+	MaxQSL               = 1950
 	QSLDetectStep        = 5
 	MaxQSLDetectDelta    = 10
 	MaxQSLCandidates     = 10
