@@ -2,11 +2,11 @@
 
 ## What's this
 
-This is an exploit for a bug in php-fpm (CVE-2019-11043). In certain nginx + php-fpm configurations, the bug is possible to trigger from the outside. That means that a web user may get code execution if you have vulnerable config (see below).
+This is an exploit for a bug in php-fpm (CVE-2019-11043). In certain nginx + php-fpm configurations, the bug is possible to trigger from the outside. This means that a web user may get code execution if you have vulnerable config (see below).
 
 ## What's vulnerable
 
-If you have a site using nginx + php-fpm and nginx have a configuration like
+If a webserver runs nginx + php-fpm and nginx have a configuration like
 
 ```
 location ~ [^/]\.php(/|$) {
@@ -18,13 +18,13 @@ location ~ [^/]\.php(/|$) {
 }
 ```
 
-which also lucks any script existence checks then you can probably hack it with this sploit.
+which also lacks any script existence checks (like `try_files`), then you can probably hack it with this sploit.
 
 ## Isn't this known to be vulnerable for years?
 
-Back in the ages, php-fpm didn't restrict the extensions of the scripts, meaning that something like `/avatar.png/some-fake-shit.php` could execute `avatar.png` as a PHP script. This issue was fixed long ago.
+A long time ago php-fpm didn't restrict the extensions of the scripts, meaning that something like `/avatar.png/some-fake-shit.php` could execute `avatar.png` as a PHP script. This issue was fixed around 2010.
 
-This one doesn't require file upload, works in most recent versions (until the fix has landed) and, most importantly, the exploit is much cooler.
+The current one doesn't require file upload, works in the most recent versions (until the fix has landed), and, most importantly, the exploit is much cooler.
 
 ## How to run
 
@@ -52,4 +52,4 @@ After this, you can start appending `?a=<your command>` to all PHP scripts (you 
 
 ## Credits
 
-Original anomaly discovered by (d90pwn)[https://github.com/d90pwn] during Real World CTF. Root clause found by me (Emil Lerner) as well as the way to set php.ini options. Final php.ini options set is found by (beched)[mailto:beched@deteact.com].
+Original anomaly discovered by [d90pwn](https://twitter/d90pwn) during Real World CTF. Root clause found by me (Emil Lerner) as well as the way to set php.ini options. Final php.ini options set is found by [beched](https://twitter.com/ahack_ru).
