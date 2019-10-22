@@ -52,4 +52,4 @@ After this, you can start appending `?a=<your command>` to all PHP scripts (you 
 
 ## Credits
 
-Original anomaly discovered by [d90pwn](https://twitter/d90pwn) during Real World CTF. Root clause found by me (Emil Lerner) as well as the way to set php.ini options. Final php.ini options set is found by [beched](https://twitter.com/ahack_ru).
+Original anomaly discovered by [d90pwn](https://twitter.com/d90pwn) during Real World CTF. Root clause found by me (Emil Lerner) as well as the way to set php.ini options. Final php.ini options set is found by [beched](https://twitter.com/ahack_ru).
