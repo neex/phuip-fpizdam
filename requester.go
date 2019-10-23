@@ -34,6 +34,7 @@ func NewRequester(resource, cookie string) (*Requester, error) {
 				DisableCompression: true,      // No "Accept-Encoding"
 				TLSNextProto:       nextProto, // No http2
 				Proxy:              http.ProxyFromEnvironment,
+				TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
 			},
 			Timeout:       30 * time.Second,
 			CheckRedirect: disableRedirects, // No redirects
