@@ -20,11 +20,12 @@ location ~ [^/]\.php(/|$) {
 
 which also lacks any script existence checks (like `try_files`), then you can probably hack it with this sploit.
 
-So, the full list of preconditions is:
+#### The full list of preconditions
 1. Nginx + php-fpm, `location ~ [^/]\.php(/|$)` must be forwarded to php-fpm (maybe the regexp can be stricter, see [#1](https://github.com/neex/phuip-fpizdam/issues/1)).
 2. The `fastcgi_split_path_info` directive must be there and contain a regexp starting with `^` and ending with `$`, so we can break it with a newline character.
 3. There must be a `PATH_INFO` variable assignment via statement `fastcgi_param PATH_INFO $fastcgi_path_info;`. At first, we thought it is always present in the `fastcgi_params` file, but it's not true.
 4. No file existence checks like `try_files $uri =404` or `if (-f $uri)`. If Nginx drops requests to non-existing scripts before FastCGI forwarding, our requests never reach php-fpm. Adding this is also the easiest way to patch.
+5. This exploit works only for PHP 7+, but the bug itself is present in earlier versions (see [below](#about-php5)).
 
 ## Isn't this known to be vulnerable for years?
 
@@ -55,6 +56,10 @@ and try to run using `phuip-fpizdam [url]`. Good output looks like this:
 ```
 
 After this, you can start appending `?a=<your command>` to all PHP scripts (you may need multiple retries).
+
+## About PHP5
+
+The buffer underflow in php-fpm is present in PHP version 5. However, this exploit makes use of an optimization used for storing FastCGI variables, [_fcgi_data_seg](https://github.com/php/php-src/blob/5d6e923/main/fastcgi.c#L186). This optimization is present only in php 7, so this particular exploit works only for php 7. There might be another exploitation technique that works in php 5.
 
 ## Credits
 
