@@ -37,7 +37,7 @@ The current one doesn't require file upload, works in the most recent versions (
 
 Install it using
 ```
-go install github.com/neex/phuip-fpizdam
+go get github.com/neex/phuip-fpizdam
 ```
 
 and try to run using `phuip-fpizdam [url]`. Good output looks like this:
