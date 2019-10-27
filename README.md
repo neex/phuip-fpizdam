@@ -40,7 +40,7 @@ Install it using
 go get github.com/neex/phuip-fpizdam
 ```
 
-and try to run using `phuip-fpizdam [url]`. Good output looks like this:
+If you get strange compilation errors, make sure you're using go >= 1.13. Run the program using `phuip-fpizdam [url]` (assuming you have the `$GOPATH/bin` inside your `$PATH`, otherwise specify the full path to the binary). Good output looks like this:
 
 ```
 2019/10/01 02:46:15 Base status code is 200
