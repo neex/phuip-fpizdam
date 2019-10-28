@@ -23,7 +23,7 @@ which also lacks any script existence checks (like `try_files`), then you can pr
 #### The full list of preconditions
 1. Nginx + php-fpm, `location ~ [^/]\.php(/|$)` must be forwarded to php-fpm (maybe the regexp can be stricter, see [#1](https://github.com/neex/phuip-fpizdam/issues/1)).
 2. The `fastcgi_split_path_info` directive must be there and contain a regexp starting with `^` and ending with `$`, so we can break it with a newline character.
-3. There must be a `PATH_INFO` variable assignment via statement `fastcgi_param PATH_INFO $fastcgi_path_info;`. At first, we thought it is always present in the `fastcgi_params` file, but it's not true.
+3. There must be a `PATH_INFO` variable assignment via statement `fastcgi_param PATH_INFO $fastcgi_path_info;`. Also `SCRIPT_FILENAME` must be set using `fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;` (there might be a constant path instead of `$document_root`). At first, we thought these are always present in the `fastcgi_params` file, but it's not true.
 4. No file existence checks like `try_files $uri =404` or `if (-f $uri)`. If Nginx drops requests to non-existing scripts before FastCGI forwarding, our requests never reach php-fpm. Adding this is also the easiest way to patch.
 5. This exploit works only for PHP 7+, but the bug itself is present in earlier versions (see [below](#about-php5)).
 
