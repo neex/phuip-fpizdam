@@ -57,9 +57,11 @@ If you get strange compilation errors, make sure you're using go >= 1.13. Run th
 
 After this, you can start appending `?a=<your command>` to all PHP scripts (you may need multiple retries).
 
-## Playground environment
+## Playground environments
 
-If you want to reproduce the issue or play with the exploit locally, do the following:
+### Using Docker
+
+If you want to reproduce the issue or play with the exploit locally through Docker, do the following:
 
 1. Clone this repo and go to the `reproducer` directory.
 2. Create the docker image using `docker build -t reproduce-cve-2019-11043 .`. It takes a long time as it internally clones the php repository and builds it from the source. However, it will be easier this way if you want to debug the exploit. The revision built is the one right before the fix.
@@ -67,6 +69,17 @@ If you want to reproduce the issue or play with the exploit locally, do the foll
 3. Now you have http://127.0.0.1:8080/script.php, which is an empty file.
 4. Run the exploit using `phuip-fpizdam http://127.0.0.1:8080/script.php`
 5. If everything is ok, you'll be able to execute commands by appending `?a=` to the script: http://127.0.0.1:8080/script.php?a=id. Try multiple times as only some of php-fpm workers are infected.
+
+### Using LXD system containers
+
+If you want to reproduce the issue or play with the exploit locally through LXD, do the following:
+
+1. Create two system containers, `vulnerable` and `attacker`. You can use the `ubuntu:18.04` container image for both containers.
+2. In the `vulnerable` container, install `nginx` and `php-fpm`. Configure the server block as [this configuration](https://gist.github.com/simos/9a87bedfcd720ccda0cff54fd06ddd0f). Create an empty file `/var/www/html/index.php`.
+3. In the `attacker` container, install the Go language (`sudo snap install go --classic`), clone this repository, and run `go build` in the directory of the repository.
+4. Run the attack as follows: `./phuip-fpizdam http://vulnerable.lxd/index.php`. Try multiple types in order to infect all php-fpm workers. 
+
+For more details instructions, see [Testing CVE-2019-11043 (php-fpm security vulnerability) with LXD system containers](https://blog.simos.info/testing-cve-2019-11043-php-fpm-security-vulnerability-with-lxd-system-containers/).
 
 ## About PHP5
 
