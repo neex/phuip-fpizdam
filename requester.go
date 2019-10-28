@@ -14,9 +14,10 @@ type Requester struct {
 	cl     *http.Client
 	u      *url.URL
 	cookie string
+	delay  time.Duration
 }
 
-func NewRequester(resource, cookie string) (*Requester, error) {
+func NewRequester(resource, cookie string, delay time.Duration) (*Requester, error) {
 	u, err := url.Parse(resource)
 	if err != nil {
 		return nil, fmt.Errorf("url.Parse failed: %v", err)
@@ -41,6 +42,7 @@ func NewRequester(resource, cookie string) (*Requester, error) {
 		},
 		u:      u,
 		cookie: cookie,
+		delay:  delay,
 	}, nil
 }
 
@@ -81,5 +83,6 @@ func (r *Requester) RequestWithQueryStringPrefix(pathInfo string, params *Attack
 		return nil, nil, err
 	}
 	data, err := ioutil.ReadAll(resp.Body)
+	time.Sleep(r.delay)
 	return resp, data, err
 }

