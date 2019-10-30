@@ -68,6 +68,17 @@ If you want to reproduce the issue or play with the exploit locally, do the foll
 4. Run the exploit using `phuip-fpizdam http://127.0.0.1:8080/script.php`
 5. If everything is ok, you'll be able to execute commands by appending `?a=` to the script: http://127.0.0.1:8080/script.php?a=id. Try multiple times as only some of php-fpm workers are infected.
 
+##### Note if on Windows running linux containers, preform the following actions:
+
+1. Clone this repo and go to the `reproducer` directory.
+2. Open the Dockerfile and remove the last line 'CMD /entrypoint'
+3. Create the docker image using `docker build -t reproduce-cve-2019-11043 .`. It takes a long time as it internally clones the php repository and builds it from the source. However, it will be easier this way if you want to debug the exploit. The revision built is the one right before the fix.
+4. Run the docker using `docker run --rm -ti -p 8080:80 reproduce-cve-2019-11043`.
+5. Now you have http://127.0.0.1:8080/script.php, which is an empty file.
+6. Run the exploit using `phuip-fpizdam http://127.0.0.1:8080/script.php`
+7. Paste in the entrypoint file contents 'nginx & php-fpm & tail -f /var/log/nginx/*.log' and hit Enter
+8. If everything is ok, you'll be able to execute commands by appending `?a=` to the script: http://127.0.0.1:8080/script.php?a=id. Try multiple times as only some of php-fpm workers are infected.
+
 ## About PHP5
 
 The buffer underflow in php-fpm is present in PHP version 5. However, this exploit makes use of an optimization used for storing FastCGI variables, [_fcgi_data_seg](https://github.com/php/php-src/blob/5d6e923/main/fastcgi.c#L186). This optimization is present only in php 7, so this particular exploit works only for php 7. There might be another exploitation technique that works in php 5.
