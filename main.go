@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -12,6 +13,7 @@ func main() {
 		method       string
 		cookie       string
 		setting      string
+		logfile      string
 		skipDetect   bool
 		skipAttack   bool
 		killWorkers  bool
@@ -28,6 +30,15 @@ func main() {
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			url := args[0]
+			if logfile != "" {
+				file, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer func() { _ = file.Close() }()
+				log.SetOutput(file)
+			}
+
 			m, ok := Methods[method]
 			if !ok {
 				log.Fatalf("Unknown detection method: %v", method)
@@ -109,6 +120,7 @@ func main() {
 	}
 	cmd.Flags().StringVar(&method, "method", "session.auto_start", "detect method (see detect_methods.go)")
 	cmd.Flags().StringVar(&cookie, "cookie", "", "send this cookie")
+	cmd.Flags().StringVar(&logfile, "logfile", "", "redirect error log from stderr to a file")
 	cmd.Flags().IntVar(&params.QueryStringLength, "qsl", 0, "qsl hint")
 	cmd.Flags().IntVar(&params.PisosLength, "pisos", 0, "pisos hint")
 	cmd.Flags().BoolVar(&skipDetect, "skip-detect", false, "skip detection phase")
