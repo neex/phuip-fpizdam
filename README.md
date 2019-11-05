@@ -94,3 +94,9 @@ The buffer underflow in php-fpm is present in PHP version 5. However, this explo
 ## Credits
 
 Original anomaly discovered by [d90pwn](https://twitter.com/d90pwn) during Real World CTF. Root clause found by me (Emil Lerner) as well as the way to set php.ini options. Final php.ini options set is found by [beched](https://twitter.com/ahack_ru).
+
+## License
+
+This exploit is distributed under terms of [MIT License](LICENSE.txt).
+
+Refrain from doing any damage with this exploit. But if you really hack something with this thing, I will be happy.
