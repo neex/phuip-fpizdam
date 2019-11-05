@@ -57,6 +57,12 @@ If you get strange compilation errors, make sure you're using go >= 1.13. Run th
 
 After this, you can start appending `?a=<your command>` to all PHP scripts (you may need multiple retries).
 
+Alternatively, you can use a [docker image](https://github.com/ypereirareis/docker-CVE-2019-11043) to run the exploit:
+
+```bash
+docker run --rm ypereirareis/cve-2019-11043 [url]
+```
+
 ## Playground environments
 
 ### Using Docker
