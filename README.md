@@ -4,6 +4,10 @@
 
 This is an exploit for a bug in php-fpm (CVE-2019-11043). In certain nginx + php-fpm configurations, the bug is possible to trigger from the outside. This means that a web user may get code execution if you have vulnerable config (see [below](#the-full-list-of-preconditions)).
 
+## Writeup
+
+While we were too lazy to do a writeup, Orange Tsai published [a perfect analysis](https://blog.orange.tw/2019/10/an-analysis-and-thought-about-recently.html) in his blog. Kudos to him.
+
 ## What's vulnerable
 
 If a webserver runs nginx + php-fpm and nginx have a configuration like
